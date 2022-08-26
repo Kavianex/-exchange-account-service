@@ -1,0 +1,26 @@
+version: '3.3'
+services:
+  account-service:
+    container_name: account-service
+    restart: unless-stopped
+    image: account-service
+    build: .
+    environment:
+      - SERVICE_PORT=80
+      - POSTGRES_HOST=account-db
+    ports:
+      - "8000:80"
+    depends_on:
+      - account-db
+  account-db:
+    container_name: account-db
+    restart: always
+    image: postgres:13.3
+    environment:
+      - POSTGRES_DB=dbname
+      - POSTGRES_USER=dbuser
+      - POSTGRES_PASSWORD=dbpass
+    volumes:
+      - account-service:/var/lib/postgresql/data
+volumes:
+  account-service:
