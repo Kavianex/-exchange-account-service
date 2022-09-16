@@ -1,14 +1,39 @@
-from audioop import add
-from datetime import date, datetime, time, timedelta
+from kafka import client as kakfa_client
+from datetime import datetime
 from decimal import Decimal
 import requests
+import uuid
 import pydantic
 from orm import database, models
 from . import enums
 import settings
 
 
-class Account(pydantic.BaseModel):
+class PydanticBaseModel(pydantic.BaseModel):
+    class Config:
+        orm_mode = True
+        use_enum_values = True
+
+    def publish(self, event_type: enums.EventType, symbol: str = ""):
+        kakfa_client.publish(
+            info=self,
+            event_type=event_type,
+            symbol=symbol,
+        )
+
+    def serialize(self):
+        info = self.dict()
+        for key, value in info.items():
+            if isinstance(value, uuid.UUID):
+                info[key] = str(value)
+            elif isinstance(value, Decimal):
+                info[key] = str(value)
+            elif isinstance(value, datetime):
+                info[key] = str(value)
+        return info
+
+
+class Account(PydanticBaseModel):
     wallet_id: pydantic.types.UUID4
     name: str
     type: enums.AccountType
@@ -26,13 +51,13 @@ class AccountIn(Account):
     pass
 
 
-class Balance(pydantic.BaseModel):
+class Balance(PydanticBaseModel):
     asset: pydantic.types.constr(max_length=10)
     account_id: pydantic.types.UUID4
 
-    class Config:
-        orm_mode = True
-        use_enum_values = True
+    # class Config:
+    #     orm_mode = True
+    #     use_enum_values = True
 
 
 class BalanceOut(Balance):
@@ -60,7 +85,7 @@ class BalanceIn(Balance):
         return v
 
 
-class Wallet(pydantic.BaseModel):
+class Wallet(PydanticBaseModel):
     standard: pydantic.types.constr(min_length=3, max_length=10)
 
     class Config:
@@ -102,7 +127,7 @@ class WalletIn(Wallet):
         return v
 
 
-class Network(pydantic.BaseModel):
+class Network(PydanticBaseModel):
     name: pydantic.types.constr(min_length=5)
     standard: pydantic.types.constr(min_length=3)
     rpc_url: pydantic.HttpUrl
@@ -167,7 +192,7 @@ class NetworkIn(Network):
         return v
 
 
-class Crypto(pydantic.BaseModel):
+class Crypto(PydanticBaseModel):
     symbol: pydantic.types.constr(
         min_length=2, max_length=10, strip_whitespace=True)
     name: pydantic.types.constr(min_length=5, max_length=80)
@@ -198,7 +223,7 @@ class CryptoIn(Crypto):
         return v
 
 
-class Order(pydantic.BaseModel):
+class Order(PydanticBaseModel):
     account_id: pydantic.types.UUID4
     symbol: pydantic.constr(max_length=20)
     side: enums.OrderSide
@@ -206,10 +231,6 @@ class Order(pydantic.BaseModel):
     quantity: pydantic.condecimal(ge=Decimal('0.0')) = Decimal("0")
     price: pydantic.condecimal(ge=Decimal('0.0')) = Decimal("0")
     quote_quantity: pydantic.condecimal(ge=Decimal('0.0')) = Decimal("0")
-
-    class Config:
-        orm_mode = True
-        use_enum_values = True
 
 
 class OrderOut(Order):
@@ -219,6 +240,12 @@ class OrderOut(Order):
     filled_quote: float = 0
     insert_time: datetime
     update_time: datetime
+
+
+class OrderBookOut(PydanticBaseModel):
+    side: enums.OrderSide
+    quantity: pydantic.condecimal(ge=Decimal('0.0')) = Decimal("0")
+    price: pydantic.condecimal(ge=Decimal('0.0')) = Decimal("0")
 
 
 class OrderIn(Order):
@@ -292,42 +319,65 @@ class OrderIn(Order):
             raise ValueError("symbol does not exsit")
         return response.json()
 
-    # @pydantic.validator('price')
-    # def symbol_exis(cls, v):
-    #     print('price')
-    #     return v
+
+class OrderCancel(PydanticBaseModel):
+    id: pydantic.types.UUID4
+    symbol: str
+
+    class Config:
+        orm_mode = True
+        use_enum_values = True
+
+    @classmethod
+    def cancel_orders(cls, orders):
+        canceled = []
+        for order in orders:
+            order = cls.from_orm(order)
+            order.cancel_order()
+            canceled.append(order)
+        return canceled
+
+    def cancel_order(self):
+        kakfa_client.publish(
+            info=self,
+            event_type=enums.EventType.cancel_order.value,
+        )
 
 
-class SubTrade(pydantic.BaseModel):
+class SubTrade(PydanticBaseModel):
     id: pydantic.types.UUID4
     order_id: pydantic.types.UUID4
     account_id: pydantic.types.UUID4
     symbol: pydantic.constr(max_length=20)
-    price: pydantic.condecimal(gt=Decimal('0.0'))
-    quantity: pydantic.condecimal(gt=Decimal('0.0'))
-    quote_quantity: pydantic.condecimal(gt=Decimal('0.0'))
+    price: pydantic.condecimal(ge=Decimal('0.0'))
+    quantity: pydantic.condecimal(ge=Decimal('0.0'))
+    quote_quantity: pydantic.condecimal(ge=Decimal('0.0'))
     commission: float
     commission_asset: str
     side: enums.OrderSide
     is_maker: bool
     insert_time: datetime
 
-    class Config:
-        orm_mode = True
-        use_enum_values = True
+    # class Config:
+    #     orm_mode = True
+    #     use_enum_values = True
 
 
 class SubTradeOut(SubTrade):
     pass
 
 
-class Trade(pydantic.BaseModel):
-    maker_order_id: pydantic.types.UUID4
-    taker_order_id: pydantic.types.UUID4
-    price: pydantic.condecimal(gt=Decimal('0.0'))
-    quantity: pydantic.condecimal(gt=Decimal('0.0'))
-    quote_quantity: pydantic.condecimal(gt=Decimal('0.0'))
+class PublicTrade(PydanticBaseModel):
+    id: pydantic.types.UUID4
+    # maker_order_id: pydantic.types.UUID4
+    # taker_order_id: pydantic.types.UUID4
+    price: pydantic.condecimal(ge=Decimal('0.0'))
+    quantity: pydantic.condecimal(ge=Decimal('0.0'))
+    # quote_quantity: pydantic.condecimal(gt=Decimal('0.0'))
+    symbol: str = None
 
-    class Config:
-        orm_mode = True
-        use_enum_values = True
+    # def publish(self):
+    #     kakfa_client.publish(
+    #         info=self,
+    #         event_type=enums.EventType.trade.value,
+    #     )
