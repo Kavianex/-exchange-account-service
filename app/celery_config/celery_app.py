@@ -1,5 +1,5 @@
 from celery import Celery
-from app import settings
+import settings
 app = Celery(
     'tasks', broker=f'pyamqp://{settings.RABBITMQ_CRED}@{settings.RABBITMQ_HOST}:5672//')
 app.conf.update(
