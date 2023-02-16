@@ -10,6 +10,8 @@ DBPASS = os.getenv("POSTGRES_PASSWORD", "dbpass")
 DBHOST = os.getenv("POSTGRES_HOST", "localhost")
 DBPORT = os.getenv("POSTGRES_PORT", "5432")
 
+RABBITMQ_CRED = os.getenv("RABBITMQ_CRED", "guest")
+RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "127.0.0.1")
 SERVICE_PORT = int(os.getenv("SERVICE_PORT", 8000))
 SECRET_TOKEN = os.getenv("SECRET_TOKEN", "SECRET_TOKEN")
 SERVICE_HOSTS = {

@@ -1,6 +1,7 @@
 from celery import Celery
-
-app = Celery('tasks', broker='pyamqp://guest@127.0.0.1:5672//')
+from app import settings
+app = Celery(
+    'tasks', broker=f'pyamqp://{settings.RABBITMQ_CRED}@{settings.RABBITMQ_HOST}:5672//')
 app.conf.update(
     # task_default_queue='PUBLISH',
     task_acks_late=False,

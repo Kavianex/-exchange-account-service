@@ -22,7 +22,7 @@ app.include_router(positions.router)
 
 @app.get("/")
 async def root():
-    return {"message": "Account service id running."}
+    return {"message": "API service is running."}
 
 
 if __name__ == "__main__":

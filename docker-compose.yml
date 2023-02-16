@@ -15,7 +15,7 @@ services:
     restart: unless-stopped
     image: engine
     build: .
-    command: celery -A tasks worker -P solo -c 1 -l INFO -Q ENGINE -n engine
+    command: bash -c "cd app && celery -A tasks worker -P solo -c 1 -l INFO -Q ENGINE -n engine"
     env_file:
       - .env
     depends_on:
