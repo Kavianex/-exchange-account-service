@@ -3,60 +3,63 @@
 The Account Service has the following endpoints:
 
 1. Netwrok:
-    
+
    Support blockchain networks to connect wallet.
 
 2. Wallet:
 
-    Connected wallet address
+   Connected wallet address
 
 3. Accounts:
 
-    Accounts (sub accounts) created for each connected wallet.
+   Accounts (sub accounts) created for each connected wallet.
 
-4. Crypto:
+4. Asset:
 
-    Tokens can be deposit and withdraw from exchange.
+   Assets can be deposit and withdraw from exchange.
 
 5. Balance:
 
-    Each account balance
+   Each account balance
 
 6. Order:
 
-    Send and cancel order
+   Send and cancel order
 
 7. Trade:
 
-    Trades created by each account orders.
-    
+   Trades created by each account orders.
 
 # Execution
 
 In the project directory you have the following options:
 
-* Python:
-    
-    1. Install the requirments.txt file:
+- Python:
 
-        ```
-        pip install -r requirements.txt
-        ```
+  1. Install the requirments.txt file:
 
-    2.  Run the following command:
+     ```
+     pip install -r requirements.txt
+     ```
 
-        ```
-        python app/main.py
-        ```
+  2. Run the following command:
 
-* Docker:
+     ```
+     python app/main.py
+     ```
 
-    Run the following command:
-    ```
-    docker-compose up
-    ```
-    or 
-    ```
-    docker-compose up -d 
-    ```
-    to run in detach mode.
+- Docker:
+
+  Run the following command:
+
+  ```
+  docker-compose up
+  ```
+
+  or
+
+  ```
+  docker-compose up -d
+  ```
+
+  to run in detach mode.

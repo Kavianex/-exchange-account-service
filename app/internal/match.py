@@ -5,8 +5,8 @@ from internal import enums, schemas
 import json
 
 
-def receive_order(order_event):
-    event = order_event['event']
+def receive_order(event):
+    # event = order_event['event']
     query = [models.Order.id == event['id']]
     if event.get('status') == enums.OrderStatus.queued.value:
         event_type = enums.EventType.send_order.value
@@ -24,6 +24,7 @@ def receive_order(order_event):
         "trades": [],
         "sub_trades": [],
         "balances": {'makers': [], 'taker': []},
+        "positions": [],
     }
     if event_type == enums.EventType.cancel_order.value:
         new_events = cancel_order(db=db, order=order, records=records)
@@ -90,27 +91,43 @@ def get_order_book_updates(db: Session, sub_trades: list[models.SubTrade], new_o
 
 def cancel_order(db: Session, order: models.Order, records: dict) -> dict:
     if order.status in enums.OrderStatus.open_orders.value:
-        balance = models.Balance.unlock(
-            info={
-                "account_id": order.account_id,
-                "asset": order.locked_asset,
-                "amount": order.locked_quantity
-            },
-            db=db
-        )
+        if order.locked_asset == enums.CollateralType.asset.value:
+            balance = models.Balance.unlock(
+                info={
+                    "account_id": order.account_id,
+                    "asset": enums.CollateralAsset.usdt.value,
+                    "amount": order.locked_quantity
+                },
+                db=db
+            )
+            records['balances']['taker'] = [balance]
+        else:
+            position = models.Position.unlock(
+                info={
+                    "account_id": order.account_id,
+                    "symbol": order.symbol,
+                    "amount": order.locked_quantity,
+                    "side": order.side,
+                },
+                db=db
+            )
+            records['positions'].append(position)
         order.status = enums.OrderStatus.canceled.value
         order.locked_quantity -= order.locked_quantity
         db.commit()
-        records['balances']['taker'] = [balance]
     return records
 
 
 def match_order(db: Session, order: models.Order, records: dict, offset: int = 0) -> dict:
-    if order.side == enums.OrderSide.buy.value:
-        opposite_side = enums.OrderSide.sell.value
+    if order.post_only:
+        order.status = enums.OrderStatus.placed.value
+        records['orders'].append(order)
+        return records
+    if order.side == enums.OrderSide.long.value:
+        opposite_side = enums.OrderSide.short.value
         price_order_by = models.Order.price.asc()
     else:
-        opposite_side = enums.OrderSide.buy.value
+        opposite_side = enums.OrderSide.long.value
         price_order_by = models.Order.price.desc()
     maker_orders_query = [
         models.Order.status.in_(enums.OrderStatus.active_orders.value),
@@ -118,7 +135,7 @@ def match_order(db: Session, order: models.Order, records: dict, offset: int = 0
         models.Order.side == opposite_side,
     ]
     if order.type == enums.OrderType.limit.value:
-        if order.side == enums.OrderSide.buy.value:
+        if order.side == enums.OrderSide.long.value:
             maker_orders_query.append(models.Order.price <= order.price)
         else:
             maker_orders_query.append(models.Order.price >= order.price)
@@ -135,16 +152,18 @@ def match_order(db: Session, order: models.Order, records: dict, offset: int = 0
                 maker=maker_order,
                 taker=order,
             )
-            sub_trades, balances = models.SubTrade.create_sub_trades(db, trade)
+            sub_trades, balances, positions = models.SubTrade.create_sub_trades(
+                db, trade)
             records['orders'].append(maker_order)
             records['trades'].append(trade)
             records['sub_trades'] += sub_trades
             records['balances']['makers'] += balances['maker']
             records['balances']['taker'] = balances['taker']
+            records['positions'] += positions
             if order.status == enums.OrderStatus.filled.value:
                 return records
         return match_order(db=db, order=order, records=records, offset=offset+1)
-    if order.type == enums.OrderType.limit.value:
+    if order.type == enums.OrderType.limit.value and order.status == enums.OrderStatus.queued.value:
         order.status = enums.OrderStatus.placed.value
     return records
 
@@ -184,4 +203,8 @@ def publish_new_events(new_events: dict, symbol: str):
     for balance in balances:
         schemas.BalanceOut.from_orm(balance).publish(
             event_type=enums.EventType.balance.value
+        )
+    for position in new_events['positions']:
+        schemas.PositionOut.from_orm(position).publish(
+            event_type=enums.EventType.position.value
         )

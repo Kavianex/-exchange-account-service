@@ -68,15 +68,17 @@ async def get_all_by_account_symbol(account_id: uuid.UUID, symbol: str, db: Sess
 
 
 @router.post("/", response_model=schemas.OrderOut)
-async def create(order_in: schemas.OrderIn, db: Session = Depends(database.get_db)):
+async def create(order_in: schemas.OrderIn, wallet: str = Header(), db: Session = Depends(database.get_db)):
+    if not order_in.is_account_valid(wallet):
+        raise HTTPException(403, 'access denied for this account id')
     order_in = order_in.dict()
     db_order = models.Order(**order_in)
-    db_balance = db_order.lock_balance(db=db)
-    if not db_balance:
-        raise HTTPException(400, "insufficient account balance")
+    locked_balance = db_order.lock_balance(db=db)
+    if not locked_balance:
+        raise HTTPException(400, "insufficient balance")
     db.add(db_order)
     db.commit()
-    schemas.BalanceOut.from_orm(db_balance).publish(
+    schemas.BalanceOut.from_orm(locked_balance).publish(
         event_type=enums.EventType.balance.value
     )
     order_out = schemas.OrderOut.from_orm(db_order)

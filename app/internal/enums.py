@@ -1,17 +1,40 @@
 from enum import Enum
 
 
+class AssetStatus(Enum):
+    active = "ACTIVE"
+    deactive = "DEACTIVE"
+
+
+class CollateralAsset(Enum):
+    usdt = "USDT"
+
+
+class CollateralType(Enum):
+    asset = "ASSET"
+    position = "POSITION"
+
+
+class MarginType(Enum):
+    isolated = "ISOLATED"
+
+
+class PositionMode(Enum):
+    ony_way = "ONE_WAY"
+    hedge_mode = "HEDGE_MODE"
+
+
+class ContractStatus(Enum):
+    trading = "TRADING"
+    stopped = "STOPPED"
+
+
 class Roles(Enum):
     admin = 'ADMIN'
     staff = 'STAFF'
     user = 'USER'
     visitor = 'VISITOR'
     service = 'SERVICE'
-
-
-class CryptoKind(Enum):
-    coin = "COIN"
-    token = "TOKEN"
 
 
 class AccountType(Enum):
@@ -25,8 +48,8 @@ class OrderType(Enum):
 
 
 class OrderSide(Enum):
-    buy = "BUY"
-    sell = "SELL"
+    long = "LONG"
+    short = "SHORT"
 
 
 class OrderStatus(Enum):
@@ -40,15 +63,37 @@ class OrderStatus(Enum):
     matched_orders = [placed, filled]
 
 
+class ApplicationMode(Enum):
+    production = "PRODUCTION"
+    testnet = "TEST"
+
+
+class NetworkChainIds(Enum):
+    production = ["0x1"]
+    testnet = ["0x5"]
+
+
 class OrderRole(Enum):
     maker = "MAKER"
     taker = "TAKER"
 
 
-class KafkaQueue(Enum):
+class PositionMarginAction(Enum):
+    add_to_margin = "ADD_T0_MARGIN"
+    take_from_margin = "TAKE_FORM_MARGIN"
+
+
+# class KafkaQueue(Enum):
+#     match_engine = "MATCH_ENGINE"
+#     account = "ACCOUNT"
+#     public = "PUBLIC"
+
+
+class QueueName(Enum):
     match_engine = "MATCH_ENGINE"
-    account = "ACCOUNT"
-    public = "PUBLIC"
+    publish = "PUBLISH"
+    blockchain = "BLOCKCHAIN"
+    # public = "PUBLIC"
 
 
 class EeventTopic(Enum):
@@ -56,6 +101,7 @@ class EeventTopic(Enum):
     trade = "trade"
     account_trade = "accountTrade"
     balance = "balance"
+    position = "position"
     order_book = "orderBook"
 
 
@@ -66,4 +112,5 @@ class EventType(Enum):
     trade = "TRADE"
     sub_trade = "SUB_TRADE"
     balance = "BALANCE"
+    position = "POSITION"
     order_book = "ORDER_BOOK"

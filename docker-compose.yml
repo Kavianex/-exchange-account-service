@@ -1,26 +1,47 @@
-version: '3.3'
+version: "3.3"
 services:
-  account-service:
-    container_name: account-service
+  api:
+    container_name: api
     restart: unless-stopped
-    image: account-service
+    image: api
+    command: python app/main.py
     build: .
-    environment:
-      - SERVICE_PORT=80
-      - POSTGRES_HOST=account-db
-    ports:
-      - "8000:80"
+    env_file:
+      - .env
     depends_on:
-      - account-db
-  account-db:
-    container_name: account-db
+      - db
+  engine:
+    container_name: engine
+    restart: unless-stopped
+    image: engine
+    build: .
+    command: celery -A tasks worker -P solo -c 1 -l INFO -Q ENGINE -n engine
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - rabbitmq
+  db:
+    container_name: db
     restart: always
     image: postgres:13.3
-    environment:
-      - POSTGRES_DB=dbname
-      - POSTGRES_USER=dbuser
-      - POSTGRES_PASSWORD=dbpass
+    env_file:
+      - .env
     volumes:
-      - account-service:/var/lib/postgresql/data
+      - k-db:/var/lib/postgresql/data
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+    volumes:
+      - rabbitmq/data/:/var/lib/rabbitmq/
+      - rabbitmq/log/:/var/log/rabbitmq
 volumes:
-  account-service:
+  rabbitmq:
+  k-db:
+networks:
+  default:
+    external:
+      name: kavianex

@@ -11,10 +11,10 @@ router = APIRouter(
 )
 
 
-@router.get("/{standard}/{address}", response_model=list[schemas.AccountOut])
-async def get_all(standard: str, address: str, db: Session = Depends(database.get_db)):
+@router.get("/{chain_id}/{address}", response_model=list[schemas.AccountOut])
+async def get_all(chain_id: str, address: str, db: Session = Depends(database.get_db)):
     db_wallet = db.query(models.Wallet).filter(
-        models.Wallet.standard == standard,
+        models.Wallet.chain_id == chain_id,
         models.Wallet.address == address
     ).first()
     if not db_wallet:

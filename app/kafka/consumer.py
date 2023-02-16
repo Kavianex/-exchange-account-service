@@ -7,14 +7,16 @@ def consume(callback: callable):
     c = Consumer({
         'bootstrap.servers': settings.KAFKA_BOOTSTRAP_SERVERS,
         'group.id': 'match-engine',
-        'auto.offset.reset': 'earliest'
+        # 'auto.create.topics.enable': True,
+        'auto.offset.reset': 'earliest',
+        'api.version.request.timeout.ms': 300000,
     })
-    print("consumer connected!")
-    c.subscribe([enums.KafkaQueue.match_engine.value])
+    topics = [enums.KafkaQueue.match_engine.value]
+    c.subscribe(topics)
+    print(f"consumer subscribed: {topics}")
 
     while True:
         msg = c.poll(1.0)
-
         if msg is None:
             continue
         if msg.error():

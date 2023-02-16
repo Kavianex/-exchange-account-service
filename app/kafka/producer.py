@@ -1,8 +1,11 @@
-from confluent_kafka import Producer
-import settings
+# from confluent_kafka import Producer
+# import settings
 
-config = {'bootstrap.servers': settings.KAFKA_BOOTSTRAP_SERVERS}
-KafkaProducer = Producer(config)
+# config = {
+#     'bootstrap.servers': settings.KAFKA_BOOTSTRAP_SERVERS,
+#     'api.version.request.timeout.ms': 300000,
+# }
+# KafkaProducer = Producer(config)
 
 
 # def delivery_report(err, msg):

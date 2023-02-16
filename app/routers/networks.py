@@ -15,10 +15,10 @@ async def get_all(db: Session = Depends(database.get_db)):
     return db.query(models.Network).all()
 
 
-@router.get("/{standard}", response_model=schemas.NetworkOut)
-async def get(standard: str, db: Session = Depends(database.get_db)):
+@router.get("/{chain_id}", response_model=schemas.NetworkOut)
+async def get(chain_id: str, db: Session = Depends(database.get_db)):
     db_network = db.query(models.Network).filter(
-        models.Network.standard == standard
+        models.Network.chain_id == chain_id
     ).first()
     if not db_network:
         raise HTTPException(status_code=404, detail="Not found")
