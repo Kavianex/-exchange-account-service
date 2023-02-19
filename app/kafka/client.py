@@ -1,8 +1,6 @@
-# from kafka.producer import KafkaProducer
-from celery_config.celery_app import app
+from kafka.producer import KafkaProducer
 from internal import enums
 from pydantic import BaseModel
-# import tasks
 import time
 import json
 
@@ -91,22 +89,23 @@ def publish(info: BaseModel, event_type: enums.EventType, symbol: str = ""):
         _produce(**event)
 
 
-def _produce(info: dict, topic: str, key: str = "", queue: str = "", callback=callable):
-    # event = {
-    #     'topic': topic,
-    #     'timestamp': int(1000 * time.time()),
-    #     'event': info,
-    # }
+def _produce(info: dict, topic: str, key: str = "", queue: str = ""):
+    event = {
+        'topic': topic,
+        'key': key,
+        'timestamp': int(1000 * time.time()),
+        'event': info,
+    }
     # print(f"produce event: {event}")
-    # msg = json.dumps(event).encode('utf8')
-    if queue == enums.QueueName.match_engine.value:
-        app.send_task("tasks.match_engine", args=[info], queue=queue)
-    else:
-        event = {
-            'topic': topic,
-            'key': key,
-            'timestamp': int(1000 * time.time()),
-            'event': info,
-        }
-        app.send_task("tasks.publish_event", args=[event], queue=queue)
-    # KafkaProducer.produce(queue, key=key, value=msg, callback=callback)
+    msg = json.dumps(event).encode('utf8')
+    # if queue == enums.QueueName.match_engine.value:
+    #     app.send_task("tasks.match_engine", args=[info], queue=queue)
+    # else:
+    #     event = {
+    #         'topic': topic,
+    #         'key': key,
+    #         'timestamp': int(1000 * time.time()),
+    #         'event': info,
+    #     }
+    #     app.send_task("tasks.publish_event", args=[event], queue=queue)
+    KafkaProducer.produce(queue, key=key, value=msg, callback=delivery_report)

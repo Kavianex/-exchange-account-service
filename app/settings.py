@@ -37,20 +37,20 @@ assert FEES["EXCHANGE"] > Decimal('0.0') and FEES["BROKER"] > Decimal(
 assert FEES["TAKER"] - abs(FEES["MAKER"]) == FEES["EXCHANGE"] + \
     FEES["BROKER"] + FEES["REFERRAL"]
 
-# _KAFKA_SERVERS = [
-#     {
-#         "host": os.getenv('KAFKA_HOST1', '0.0.0.0'),
-#         "port": os.getenv('KAFKA_HOST1PORT', '9092'),
-#     },
-#     {
-#         "host": os.getenv('KAFKA_HOST2', ''),
-#         "port": os.getenv('KAFKA_HOST2PORT', '9092'),
-#     },
-#     {
-#         "host": os.getenv('KAFKA_HOST3', ''),
-#         "port": os.getenv('KAFKA_HOST3PORT', '9092'),
-#     },
-# ]
-# KAFKA_BOOTSTRAP_SERVERS = ','.join([
-#     f"{bootstrap_server['host']}:{bootstrap_server['port']}" for bootstrap_server in _KAFKA_SERVERS if bootstrap_server['host']]
-# )
+_KAFKA_SERVERS = [
+    {
+        "host": os.getenv('KAFKA_HOST1', '0.0.0.0'),
+        "port": os.getenv('KAFKA_HOST1PORT', '9092'),
+    },
+    {
+        "host": os.getenv('KAFKA_HOST2', ''),
+        "port": os.getenv('KAFKA_HOST2PORT', '9092'),
+    },
+    {
+        "host": os.getenv('KAFKA_HOST3', ''),
+        "port": os.getenv('KAFKA_HOST3PORT', '9092'),
+    },
+]
+KAFKA_BOOTSTRAP_SERVERS = ','.join([
+    f"{bootstrap_server['host']}:{bootstrap_server['port']}" for bootstrap_server in _KAFKA_SERVERS if bootstrap_server['host']]
+)

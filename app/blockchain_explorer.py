@@ -1,5 +1,4 @@
 import settings
-from celery_config.celery_app import app
 from orm import database, models
 from internal import enums
 import json
@@ -82,8 +81,8 @@ class Explorer:
                 "asset_contract_address": network.contract_address,
                 "transactions": cleaned_transactions,
             }
-            app.send_task("tasks.create_transactions", args=[
-                          info], queue=enums.QueueName.blockchain.value)
+            # app.send_task("tasks.create_transactions", args=[
+            #               info], queue=enums.QueueName.blockchain.value)
 
     @classmethod
     def clean_transactions(cls, transactions, required_confirmations):

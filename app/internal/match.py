@@ -29,10 +29,14 @@ def receive_order(event):
     if event_type == enums.EventType.cancel_order.value:
         new_events = cancel_order(db=db, order=order, records=records)
     else:
+        contract = db.query(models.Contract).filter(
+            models.Contract.symbol == order.symbol,
+        ).with_for_update().one()
         new_events = match_order(
             db=db,
             order=order,
-            records=records
+            records=records,
+            contract=contract,
         )
         if order.status in enums.OrderStatus.matched_orders.value:
             order_matched = True
@@ -118,7 +122,7 @@ def cancel_order(db: Session, order: models.Order, records: dict) -> dict:
     return records
 
 
-def match_order(db: Session, order: models.Order, records: dict, offset: int = 0) -> dict:
+def match_order(db: Session, order: models.Order, records: dict, contract: models.Contract, offset: int = 0) -> dict:
     if order.post_only:
         order.status = enums.OrderStatus.placed.value
         records['orders'].append(order)
@@ -151,7 +155,10 @@ def match_order(db: Session, order: models.Order, records: dict, offset: int = 0
                 db=db,
                 maker=maker_order,
                 taker=order,
+                contract=contract
             )
+            if not trade:
+                break
             sub_trades, balances, positions = models.SubTrade.create_sub_trades(
                 db, trade)
             records['orders'].append(maker_order)

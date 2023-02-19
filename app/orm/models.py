@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship, Session, exc
 from sqlalchemy.sql import func, text
 from decimal import Decimal
 import uuid
+import math
 import settings
 from internal import enums, schemas
 from .database import Base
@@ -104,15 +105,25 @@ class Balance(Base):
     locked = Column(DECIMAL, default=Decimal('0.0'))
 
     @classmethod
+    def get_lock_amount(cls, amount):
+        max_digits = 3
+        digit_factor = Decimal(str(10 ** max_digits))
+        amount *= digit_factor
+        amount = math.ceil(amount)
+        amount /= digit_factor
+        return amount
+
+    @classmethod
     def lock(cls, info: dict, db: Session):
         try:
             db_balance = db.query(cls).filter(
                 cls.account_id == info['account_id'],
                 cls.asset == enums.CollateralAsset.usdt.value
             ).with_for_update().one()
-            if db_balance.free >= info['amount']:
-                db_balance.locked += info['amount']
-                db_balance.free -= info['amount']
+            lock_amount = cls.get_lock_amount(info['amount'])
+            if db_balance.free >= lock_amount:
+                db_balance.locked += lock_amount
+                db_balance.free -= lock_amount
                 return db_balance
         except exc.NoResultFound:
             pass
@@ -125,9 +136,10 @@ class Balance(Base):
                 cls.account_id == info['account_id'],
                 cls.asset == info['asset']
             ).with_for_update().one()
-            if db_balance.locked >= info['amount']:
-                db_balance.free += info['amount']
-                db_balance.locked -= info['amount']
+            lock_amount = cls.get_lock_amount(info['amount'])
+            if db_balance.locked >= lock_amount:
+                db_balance.free += lock_amount
+                db_balance.locked -= lock_amount
                 return db_balance
         except exc.NoResultFound:
             pass
@@ -302,7 +314,7 @@ class Trade(Base):
     insert_time = Column(TIMESTAMP, server_default=func.now())
 
     @classmethod
-    def create_trade(cls, db: Session, maker: Order, taker: Order) -> bool:
+    def create_trade(cls, db: Session, maker: Order, taker: Order, contract: Contract) -> bool:
         active_maker_quantity = maker.quantity - maker.filled_quantity
         if taker.quantity:
             taker_remained_quantity = taker.quantity - taker.filled_quantity
@@ -315,23 +327,32 @@ class Trade(Base):
             else:
                 # TODO: quantity decimal
                 trade_quantity = taker_remained_quote_quantity / maker.price
+        lot_step = int(trade_quantity / contract.min_base_quantity)
+        trade_quantity = lot_step * contract.min_base_quantity
         trade_quote_quantity = trade_quantity * maker.price
-        if trade_quantity == active_maker_quantity:
-            maker.status = enums.OrderStatus.filled.value
-        if taker.quantity:
-            if taker_remained_quantity == trade_quantity:
+        if trade_quantity == Decimal('0.0'):
+            if taker.filled_quantity > Decimal('0.0'):
                 taker.status = enums.OrderStatus.filled.value
+            else:
+                taker.status = enums.OrderStatus.canceled.value
+            trade = None
         else:
-            if taker_remained_quote_quantity == trade_quote_quantity:
-                taker.status = enums.OrderStatus.filled.value
-        trade = cls(
-            maker_order=maker,
-            taker_order=taker,
-            price=maker.price,
-            quantity=trade_quantity,
-            quote_quantity=trade_quote_quantity
-        )
-        db.add(trade)
+            if trade_quantity == active_maker_quantity:
+                maker.status = enums.OrderStatus.filled.value
+            if taker.quantity:
+                if taker_remained_quantity == trade_quantity:
+                    taker.status = enums.OrderStatus.filled.value
+            else:
+                if taker_remained_quote_quantity == trade_quote_quantity:
+                    taker.status = enums.OrderStatus.filled.value
+            trade = cls(
+                maker_order=maker,
+                taker_order=taker,
+                price=maker.price,
+                quantity=trade_quantity,
+                quote_quantity=trade_quote_quantity
+            )
+            db.add(trade)
         return trade
 
 
@@ -354,9 +375,9 @@ class SubTrade(Base):
             "maker": []
         }
         positions = []
-        contract = db.query(Contract).filter(
-            Contract.symbol == trade.maker_order.symbol,
-        ).with_for_update().one()
+        # contract = db.query(Contract).filter(
+        #     Contract.symbol == trade.maker_order.symbol,
+        # ).with_for_update().one()
         open_interest = Decimal('0.0')
         for idx, order in enumerate([trade.maker_order, trade.taker_order]):
             is_maker = idx == 0
@@ -476,7 +497,7 @@ class SubTrade(Base):
             )
             positions.append(position)
         # contract.open_interest += open_interest / Decimal('2.0')
-        db.add(contract)
+        # db.add(contract)
         db.add_all(sub_trades)
         db.add_all(positions)
         for sub_trade in sub_trades:
