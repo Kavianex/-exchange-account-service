@@ -20,7 +20,6 @@ services:
       - .env
     depends_on:
       - db
-      - rabbitmq
   db:
     container_name: db
     restart: always
