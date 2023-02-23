@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.openapi.utils import get_openapi
 from orm.database import engine, Base
 from routers import wallets, networks, balances, accounts, orders, trades, tokens, assets, contracts, brokers, positions
 import uvicorn
@@ -6,7 +7,7 @@ import settings
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+app = FastAPI(title="Kavianex | API", version="0.1.0", docs_url=None)
 app.include_router(networks.router)
 app.include_router(wallets.router)
 app.include_router(accounts.router)
@@ -18,6 +19,34 @@ app.include_router(assets.router)
 app.include_router(contracts.router)
 app.include_router(brokers.router)
 app.include_router(positions.router)
+
+
+def my_schema():
+    openapi_schema = get_openapi(
+        title="The Kavianex API Documents",
+        version="1.0",
+        routes=app.routes,
+    )
+    openapi_schema["info"] = {
+        "title": "The Kavianex API Documents",
+        "version": "1.0",
+        "description": "Learn about programming language history!",
+        "termsOfService": "http://www.kavianex.com/terms/",
+        "contact": {
+            "name": "Get Help with this API",
+            # "url": "https://.com/help",
+            "email": "info@kavianex.com"
+        },
+        "license": {
+            "name": "MIT",
+            "url": "https://opensource.org/license/mit/"
+        },
+    }
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+
+app.openapi = my_schema
 
 
 @app.get("/")
