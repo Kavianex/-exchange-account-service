@@ -178,8 +178,11 @@ class AccountOut(Account):
 
 
 class AccountIn(Account):
-    # leverage: pydantic.conint(ge=1) = 5
-    pass
+    @pydantic.validator('leverage')
+    def check_value(cls, v):
+        if not v == 5:
+            raise ValueError('invalid leverage.')
+        return v
 
 
 class Balance(PydanticBaseModel):

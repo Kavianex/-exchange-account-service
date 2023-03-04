@@ -1,11 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Header, Depends, HTTPException, Response
+from sqlalchemy.orm import Session
 from fastapi.openapi.utils import get_openapi
-from orm.database import engine, Base
+from orm import database, models
+import json
 from routers import wallets, networks, balances, accounts, orders, trades, tokens, assets, contracts, brokers, positions
 import uvicorn
 import settings
-
-Base.metadata.create_all(bind=engine)
+database.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="Kavianex | API", version="0.1.0", docs_url=None)
 app.include_router(networks.router)
@@ -47,6 +48,32 @@ def my_schema():
 
 
 app.openapi = my_schema
+
+
+@app.middleware('http')
+async def verify_account_id(request: Request, call_next):
+    verified = True
+    if not request.method == 'GET':
+        path = request.url.path
+        if path[-1] == '/' and not path == '/wallet/':
+            db = next(database.get_db())
+            try:
+                wallet_address = request.headers['wallet']
+                account_id = request.headers['account_id']
+                db_wallet = db.query(models.Wallet).filter(
+                    models.Wallet.address == wallet_address,
+                ).one()
+                db.query(models.Account).filter(
+                    models.Account.id == account_id,
+                    models.Account.wallet_id == db_wallet.id
+                ).one()
+            except Exception as e:
+                verified = False
+    if verified:
+        response = await call_next(request)
+    else:
+        response = Response(status_code=403, content='invalid account_id')
+    return response
 
 
 @app.get("/")
