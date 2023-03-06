@@ -40,6 +40,7 @@ async def get(chain_id: str, address: str, db: Session = Depends(database.get_db
 
 @router.post("/", response_model=schemas.WalletOut)
 async def create(wallet_in: schemas.WalletIn, wallet: str = Header(), db: Session = Depends(database.get_db)):
+    wallet = wallet.lower()
     if not wallet_in.is_valid(wallet):
         raise HTTPException(400, 'this address and chain_id already exist.')
     wallet_in = wallet_in.dict()
