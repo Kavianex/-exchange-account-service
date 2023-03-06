@@ -68,10 +68,12 @@ async def get_all_by_account_symbol(account_id: uuid.UUID, symbol: str, db: Sess
 
 
 @router.post("/", response_model=schemas.OrderOut)
-async def create(order_in: schemas.OrderIn, wallet: str = Header(), db: Session = Depends(database.get_db)):
-    if not order_in.is_account_valid(wallet):
-        raise HTTPException(403, 'access denied for this account id')
+async def create(order_in: schemas.OrderIn, account_id:  str = Header(), db: Session = Depends(database.get_db)):
     order_in = order_in.dict()
+    order_in['account_id'] = account_id
+    account = db.query(models.Account).filter(
+        models.Account.id == account_id).one()
+    order_in['leverage'] = account.leverage
     db_order = models.Order(**order_in)
     locked_balance = db_order.lock_balance(db=db)
     if not locked_balance:

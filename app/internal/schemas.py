@@ -346,7 +346,6 @@ class PositionOut(Position):
 
 
 class Order(PydanticBaseModel):
-    account_id: pydantic.types.UUID4
     symbol: pydantic.constr(max_length=20)
     side: enums.OrderSide
     type: enums.OrderType
@@ -359,6 +358,7 @@ class Order(PydanticBaseModel):
 
 class OrderOut(Order):
     id: pydantic.types.UUID4
+    account_id: pydantic.types.UUID4
     status: enums.OrderStatus
     filled_quantity: pydantic.condecimal(ge=Decimal('0.0')) = Decimal("0")
     filled_quote: pydantic.condecimal(ge=Decimal('0.0')) = Decimal("0")
@@ -432,13 +432,6 @@ class OrderIn(Order):
                         "quantity decimal precision can't be more than base_precision of symbol")
         values['base'] = contract.base_asset
         values['quote'] = contract.quote_asset
-        db = next(database.get_db())
-        try:
-            account = db.query(models.Account).filter(
-                models.Account.id == values['account_id']).one()
-        except Exception as e:
-            raise ValueError("Invalid accountId")
-        values['leverage'] = account.leverage
         return values
 
     @classmethod

@@ -59,7 +59,7 @@ async def verify_account_id(request: Request, call_next):
             db = next(database.get_db())
             try:
                 wallet_address = request.headers['wallet']
-                account_id = request.headers['account_id']
+                account_id = request.headers['account-id']
                 db_wallet = db.query(models.Wallet).filter(
                     models.Wallet.address == wallet_address,
                 ).one()
