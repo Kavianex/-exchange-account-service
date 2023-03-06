@@ -55,7 +55,7 @@ async def verify_account_id(request: Request, call_next):
     verified = True
     if not request.method == 'GET':
         path = request.url.path
-        if path[-1] == '/' and not path == '/wallet/':
+        if path[-1] == '/' and path not in ['/wallet/', '/network/']:
             db = next(database.get_db())
             try:
                 wallet_address = request.headers['wallet']
