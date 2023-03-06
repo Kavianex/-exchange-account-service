@@ -2,7 +2,7 @@ import os
 from decimal import Decimal
 
 _APPLICATION_MODE = os.getenv("APPLICATION_MODE", "PRODUCTION")
-TESTNET_AAPLICATION = _APPLICATION_MODE == "TESTNET"
+TESTNET_APPLICATION = _APPLICATION_MODE == "TESTNET"
 
 DBNAME = os.getenv("POSTGRES_DB", "dbname")
 DBUSER = os.getenv("POSTGRES_USER", "dbuser")

@@ -4,6 +4,7 @@ from orm import database, models
 from internal import schemas, middleware, enums
 import uuid
 from decimal import Decimal
+import settings
 
 router = APIRouter(
     prefix="/balance",
@@ -29,6 +30,8 @@ async def get_all(account_id: uuid.UUID, db: Session = Depends(database.get_db))
 
 @router.put("/setFreeBalance", response_model=schemas.BalanceOut)
 async def update(balance: schemas.Balance, db: Session = Depends(database.get_db)):
+    if not settings.TESTNET_APPLICATION:
+        return HTTPException(403)
     if models.Position.get_open_positions(account_id=balance.account_id, db=db):
         raise HTTPException(status_code=400, detail="You have open positions")
     elif models.Order.filter_open_orders(account_id=balance.account_id, db=db):
