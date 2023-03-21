@@ -388,10 +388,10 @@ class OrderIn(Order):
             elif values['quantity'] * values['price'] < contract.min_quote_quantity:
                 raise ValueError(
                     "order value can't be lower than min_quote_quantity of symbol")
-            elif -values['quantity'].as_tuple().exponent > contract.quote_precision:
+            elif -values['quantity'].as_tuple().exponent > contract.base_precision:
                 raise ValueError(
                     "quantity decimal precision can't be more than base_precision of symbol")
-            elif -values['price'].as_tuple().exponent > contract.base_precision:
+            elif -values['price'].as_tuple().exponent > contract.quote_precision:
                 raise ValueError(
                     "price decimal precision can't be more than quote_precision of symbol")
         elif values['type'] == enums.OrderType.market.value:
