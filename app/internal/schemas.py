@@ -440,8 +440,9 @@ class OrderIn(Order):
         db_contract = db.query(models.Contract).filter(
             models.Contract.symbol == symbol
         ).first()
-
-        if not db_contract:
+        contract_not_exist = not db_contract
+        db.close()
+        if contract_not_exist:
             raise ValueError("symbol does not exsit")
         return ContractOut.from_orm(db_contract)
 
