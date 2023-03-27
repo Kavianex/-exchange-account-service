@@ -13,7 +13,7 @@ SQLALCHEMY_DATABASE_URL = "postgresql://{}:{}@{}:{}/{}".format(
 )
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
-    pool_size=20, max_overflow=0
+    pool_size=20, max_overflow=10
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
