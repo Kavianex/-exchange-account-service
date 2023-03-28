@@ -28,6 +28,8 @@ services:
       - .env
     volumes:
       - k-db:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
   # rabbitmq:
   #   image: rabbitmq:3-management-alpine
   #   container_name: rabbitmq
