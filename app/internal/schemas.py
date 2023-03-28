@@ -55,7 +55,7 @@ class Asset(pydantic.BaseModel):
 
     @classmethod
     def get_asset(cls, symbol: str):
-        db = next(database.get_db())
+        db = database.SessionLocal()
         asset = db.query(models.Asset).filter(
             models.Asset.symbol == symbol
         ).first()
@@ -436,7 +436,7 @@ class OrderIn(Order):
 
     @classmethod
     def get_contract(cls, symbol):
-        db = next(database.get_db())
+        db = database.SessionLocal()
         db_contract = db.query(models.Contract).filter(
             models.Contract.symbol == symbol
         ).first()
