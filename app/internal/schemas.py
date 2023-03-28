@@ -446,20 +446,6 @@ class OrderIn(Order):
             raise ValueError("symbol does not exsit")
         return ContractOut.from_orm(db_contract)
 
-    def is_account_valid(self, wallet_address):
-        db = next(database.get_db())
-        try:
-            db_wallet = db.query(models.Wallet).filter(
-                models.Wallet.address == wallet_address,
-            ).one()
-            db_account = db.query(models.Account).filter(
-                models.Account.id == self.account_id,
-                models.Account.wallet_id == db_wallet.id
-            ).one()
-            return True
-        except Exception as e:
-            return False
-
 
 class OrderBookOut(PydanticBaseModel):
     side: enums.OrderSide

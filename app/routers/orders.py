@@ -80,6 +80,7 @@ async def create(order_in: schemas.OrderIn, account_id:  str = Header(), db: Ses
         raise HTTPException(400, "insufficient balance")
     db.add(db_order)
     db.commit()
+    db.close()
     schemas.BalanceOut.from_orm(locked_balance).publish(
         event_type=enums.EventType.balance.value
     )
