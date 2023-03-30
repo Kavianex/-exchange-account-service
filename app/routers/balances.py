@@ -41,7 +41,7 @@ async def update(balance: schemas.Balance, db: Session = Depends(database.get_db
     balance_in = schemas.BalanceIn(
         account_id=balance.account_id,
         asset=enums.CollateralAsset.usdt.value,
-        free=Decimal("10000"),
+        free=Decimal("1000000"),
         locked=Decimal("0.0"),
     )
     db_balance = models.Balance.update_or_create(balance_in=balance_in, db=db)
