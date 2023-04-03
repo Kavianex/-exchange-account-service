@@ -109,3 +109,4 @@ def _produce(info: dict, topic: str, key: str = "", queue: str = ""):
     #     }
     #     app.send_task("tasks.publish_event", args=[event], queue=queue)
     KafkaProducer.produce(queue, key=key, value=msg, callback=delivery_report)
+    KafkaProducer.poll(0)
