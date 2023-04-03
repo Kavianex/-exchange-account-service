@@ -5,7 +5,7 @@ config = {
     'bootstrap.servers': settings.KAFKA_BOOTSTRAP_SERVERS,
     'queue.buffering.max.messages': 1000000,
     'queue.buffering.max.ms': 5000,
-    'queue.buffering.timeout.ms': -1,
+    'queue.enqueue.timeout.ms': -1,
 }
 KafkaProducer = Producer(config)
 
