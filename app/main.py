@@ -55,7 +55,9 @@ async def verify_account_id(request: Request, call_next):
     verified = True
     if not request.method == 'GET':
         path = request.url.path
-        if path[-1] == '/' and path not in ['/wallet/', '/network/']:
+        post_auth = request.method == 'POST' and path[-1] == '/' and path not in ['/wallet/', '/network/']
+        other_methods_auth = (not request.method == 'POST') and (not path[-1] == '/')
+        if post_auth or other_methods_auth:
             db = database.SessionLocal()
             try:
                 wallet_address = request.headers['wallet']
